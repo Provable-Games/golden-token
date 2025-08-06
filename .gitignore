@@ -1,0 +1,11 @@
+target/
+coverage/
+.scarb/
+Scarb.lock
+*.sierra.json
+*.casm.json
+.starknet-foundry/
+.snfoundry_cache/
+snfoundry_trace/
+.env
+accounts/

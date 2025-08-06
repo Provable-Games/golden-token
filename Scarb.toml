@@ -1,0 +1,31 @@
+[package]
+name = "golden_token_nft"
+version = "0.1.0"
+edition = "2024_07"
+
+[dependencies]
+starknet = "2.11.4"
+openzeppelin_access = "2.0.0"
+openzeppelin_token = "2.0.0"
+openzeppelin_introspection = "2.0.0"
+
+[scripts]
+test = "snforge test"
+
+[dev-dependencies]
+snforge_std = "0.46.0"
+
+[[target.starknet-contract]]
+allowed-libfuncs-list.name = "experimental"
+sierra = true
+casm = false
+
+[profile.dev.cairo]
+unstable-add-statements-functions-debug-info = true
+unstable-add-statements-code-locations-debug-info = true
+inlining-strategy = "avoid"
+
+[tool.snforge]
+fork = [
+    { name = "mainnet", url = "https://api.cartridge.gg/x/starknet/mainnet", block_id = { tag = "latest" } }
+]
