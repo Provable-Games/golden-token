@@ -9,7 +9,10 @@ pub mod golden_token {
     use openzeppelin_token::erc721::interface::{
         IERC721Dispatcher, IERC721DispatcherTrait, IERC721Metadata,
     };
-    use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+    use openzeppelin_token::erc721::ERC721Component;
+    use openzeppelin_governance::votes::VotesComponent;
+    use openzeppelin_utils::cryptography::nonces::NoncesComponent;
+    use openzeppelin_utils::cryptography::snip12::SNIP12Metadata;
     use starknet::ContractAddress;
     use super::encoding::bytes_base64_encode;
     use super::svg::SvgTrait;
@@ -18,6 +21,8 @@ pub mod golden_token {
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
+    component!(path: VotesComponent, storage: erc721_votes, event: ERC721VotesEvent);
+    component!(path: NoncesComponent, storage: nonces, event: NoncesEvent);
 
     // Ownable Mixin
     #[abi(embed_v0)]
@@ -36,6 +41,16 @@ pub mod golden_token {
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
 
+    // Votes Implementation
+    #[abi(embed_v0)]
+    impl VotesImpl = VotesComponent::VotesImpl<ContractState>;
+    impl VotesInternalImpl = VotesComponent::InternalImpl<ContractState>;
+
+    // Nonces
+    #[abi(embed_v0)]
+    impl NoncesImpl = NoncesComponent::NoncesImpl<ContractState>;
+    impl NoncesInternalImpl = NoncesComponent::InternalImpl<ContractState>;
+
     // ERC2981 Implementation
     #[abi(embed_v0)]
     impl ERC2981Impl = ERC2981Component::ERC2981Impl<ContractState>;
@@ -43,7 +58,6 @@ pub mod golden_token {
     impl ERC2981AdminOwnableImpl =
         ERC2981Component::ERC2981AdminOwnableImpl<ContractState>;
     impl ERC2981InternalImpl = ERC2981Component::InternalImpl<ContractState>;
-
     impl ERC2981ImmutableConfig of ERC2981Component::ImmutableConfig {
         const FEE_DENOMINATOR: u128 = 10_000; // 10,000 = 100% (so 500 = 5%)
     }
@@ -58,6 +72,10 @@ pub mod golden_token {
         pub src5: SRC5Component::Storage,
         #[substorage(v0)]
         pub erc2981: ERC2981Component::Storage,
+        #[substorage(v0)]
+        pub erc721_votes: VotesComponent::Storage,
+        #[substorage(v0)]
+        pub nonces: NoncesComponent::Storage,
     }
 
     #[event]
@@ -71,6 +89,42 @@ pub mod golden_token {
         SRC5Event: SRC5Component::Event,
         #[flat]
         ERC2981Event: ERC2981Component::Event,
+        #[flat]
+        ERC721VotesEvent: VotesComponent::Event,
+        #[flat]
+        NoncesEvent: NoncesComponent::Event,
+    }
+
+     /// Required for hash computation.
+     pub impl SNIP12MetadataImpl of SNIP12Metadata {
+        fn name() -> felt252 {
+            'Golden Token'
+        }
+        fn version() -> felt252 {
+            '1.0.0'
+        }
+    }
+
+    // We need to call the `transfer_voting_units` function after
+    // every mint, burn and transfer.
+    // For this, we use the `before_update` hook of the
+    //`ERC721Component::ERC721HooksTrait`.
+    // This hook is called before the transfer is executed.
+    // This gives us access to the previous owner.
+    impl ERC721VotesHooksImpl of ERC721Component::ERC721HooksTrait<ContractState> {
+        fn before_update(
+            ref self: ERC721Component::ComponentState<ContractState>,
+            to: ContractAddress,
+            token_id: u256,
+            auth: ContractAddress
+        ) {
+            let mut contract_state = self.get_contract_mut();
+
+            // We use the internal function here since it does not check if the token
+            // id exists which is necessary for mints
+            let previous_owner = self._owner_of(token_id);
+            contract_state.erc721_votes.transfer_voting_units(previous_owner, to, 1);
+        }
     }
 
     /// Assigns `owner` as the contract owner.

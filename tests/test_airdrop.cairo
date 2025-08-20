@@ -11,13 +11,13 @@ const OWNER: felt252 = 'OWNER';
 
 // Real mainnet golden token contract address
 fn GOLDEN_TOKEN_MAINNET_ADDRESS() -> ContractAddress {
-    contract_address_const::<0x04f5e296c805126637552cf3930e857f380e7c078e8f00696de4fc8545356b1d>()
+    0x04f5e296c805126637552cf3930e857f380e7c078e8f00696de4fc8545356b1d.try_into().unwrap()
 }
 
 // Deploy new golden token contract
 fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher) {
     let contract = declare("golden_token").unwrap().contract_class();
-    let owner = contract_address_const::<OWNER>();
+    let owner: ContractAddress = OWNER.try_into().unwrap();
     let name: ByteArray = "Golden Token V2";
     let symbol: ByteArray = "GOLDENV2";
     let base_uri: ByteArray = "https://api.provablegames.com/golden_token/";
