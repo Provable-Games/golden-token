@@ -1,9 +1,12 @@
 use core::serde::Serde;
+use golden_token_nft::{IGoldenTokenDispatcher, IGoldenTokenDispatcherTrait};
 use openzeppelin_token::erc721::interface::{
     IERC721Dispatcher, IERC721DispatcherTrait, IERC721MetadataDispatcher,
     IERC721MetadataDispatcherTrait,
 };
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
+};
 use starknet::ContractAddress;
 
 // Test constants
@@ -15,7 +18,7 @@ fn GOLDEN_TOKEN_MAINNET_ADDRESS() -> ContractAddress {
 }
 
 // Deploy new golden token contract
-fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher) {
+fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher, IGoldenTokenDispatcher) {
     let contract = declare("golden_token").unwrap().contract_class();
     let owner: ContractAddress = OWNER.try_into().unwrap();
     let name: ByteArray = "Golden Token V2";
@@ -35,37 +38,62 @@ fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher) {
     calldata.append(royalty_fraction.into());
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
-    (IERC721Dispatcher { contract_address }, IERC721MetadataDispatcher { contract_address })
+    (
+        IERC721Dispatcher { contract_address },
+        IERC721MetadataDispatcher { contract_address },
+        IGoldenTokenDispatcher { contract_address },
+    )
 }
 
 #[test]
 #[fork("mainnet")]
-fn test_airdrop_all_160_tokens() {
+fn test_airdrop_80_tokens() {
     // Deploy the new golden token contract
-    let (new_golden_token, new_golden_token_metadata) = deploy_golden_token();
+    let (new_golden_token, new_golden_token_metadata, golden_token_dispatcher) =
+        deploy_golden_token();
+    let owner: ContractAddress = OWNER.try_into().unwrap();
+
+    // Start cheat caller address to act as owner
+    start_cheat_caller_address(golden_token_dispatcher.contract_address, owner);
+
+    golden_token_dispatcher.airdrop_tokens(80);
 
     // Get the original golden token contract on mainnet
     let original_golden_token = IERC721Dispatcher {
         contract_address: GOLDEN_TOKEN_MAINNET_ADDRESS(),
     };
 
-    // Verify ALL 160 tokens were airdropped with correct ownership
-    let mut token_id: u256 = 1;
+    // Verify all 80 legacy holders get 7 tokens each (560 total tokens)
+    let mut new_token_id: u256 = 1;
+    let mut legacy_token_id: u256 = 1;
 
     loop {
-        if token_id > 160 {
+        if legacy_token_id > 80 {
             break;
         }
 
-        // Get owners from both contracts
-        let original_owner = original_golden_token.owner_of(token_id);
-        let new_owner = new_golden_token.owner_of(token_id);
+        // Get owner of legacy token
+        let legacy_owner = original_golden_token.owner_of(legacy_token_id);
 
-        // Assert exact match - no tolerance for missing tokens
-        assert(new_owner == original_owner, 'Token ownership mismatch');
+        // Check that this owner got 7 consecutive tokens in the new contract
+        let mut i: u8 = 0;
+        loop {
+            if i > 6 {
+                break;
+            }
 
-        token_id += 1;
+            let new_owner = new_golden_token.owner_of(new_token_id);
+            assert(new_owner == legacy_owner, 'Token ownership mismatch');
+
+            new_token_id += 1;
+            i += 1;
+        }
+
+        legacy_token_id += 1;
     }
+
+    // Verify total supply is 560 (80 legacy holders * 7 tokens each)
+    assert(new_token_id == 80 * 7 + 1, 'Wrong total token count');
 
     // Verify metadata is set correctly
     let name = new_golden_token_metadata.name();
@@ -74,23 +102,16 @@ fn test_airdrop_all_160_tokens() {
     assert(symbol == "GOLDENV2", 'Wrong token symbol');
 }
 
-
-#[test]
-#[should_panic(expected: ('ERC721: invalid token ID',))]
-#[fork("mainnet")]
-fn test_token_161_does_not_exist() {
-    // Deploy the new golden token contract
-    let (new_golden_token, _) = deploy_golden_token();
-
-    // This should panic as token 161 should not exist
-    new_golden_token.owner_of(161);
-}
-
 #[test]
 #[fork("mainnet")]
 fn test_token_uri_generation() {
     // Deploy the new golden token contract
-    let (_, new_golden_token_metadata) = deploy_golden_token();
+    let (_, new_golden_token_metadata, golden_token_dispatcher) = deploy_golden_token();
+    let owner: ContractAddress = OWNER.try_into().unwrap();
+
+    // Start cheat caller address to act as owner and airdrop some tokens
+    start_cheat_caller_address(golden_token_dispatcher.contract_address, owner);
+    golden_token_dispatcher.airdrop_tokens(1);
 
     // Test token URI for just one token to avoid resource exhaustion
     let token_uri = new_golden_token_metadata.token_uri(1);

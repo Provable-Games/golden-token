@@ -1,19 +1,25 @@
 pub mod encoding;
 pub mod svg;
 
+#[starknet::interface]
+pub trait IGoldenToken<T> {
+    fn airdrop_tokens(ref self: T, limit: u8);
+}
+
 #[starknet::contract]
 pub mod golden_token {
     use openzeppelin_access::ownable::OwnableComponent;
+    use openzeppelin_governance::votes::VotesComponent;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::common::erc2981::ERC2981Component;
+    use openzeppelin_token::erc721::ERC721Component;
     use openzeppelin_token::erc721::interface::{
         IERC721Dispatcher, IERC721DispatcherTrait, IERC721Metadata,
     };
-    use openzeppelin_token::erc721::ERC721Component;
-    use openzeppelin_governance::votes::VotesComponent;
     use openzeppelin_utils::cryptography::nonces::NoncesComponent;
     use openzeppelin_utils::cryptography::snip12::SNIP12Metadata;
     use starknet::ContractAddress;
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::encoding::bytes_base64_encode;
     use super::svg::SvgTrait;
 
@@ -76,6 +82,8 @@ pub mod golden_token {
         pub erc721_votes: VotesComponent::Storage,
         #[substorage(v0)]
         pub nonces: NoncesComponent::Storage,
+        pub golden_token_address: ContractAddress,
+        pub airdrop_count: u8,
     }
 
     #[event]
@@ -95,8 +103,8 @@ pub mod golden_token {
         NoncesEvent: NoncesComponent::Event,
     }
 
-     /// Required for hash computation.
-     pub impl SNIP12MetadataImpl of SNIP12Metadata {
+    /// Required for hash computation.
+    pub impl SNIP12MetadataImpl of SNIP12Metadata {
         fn name() -> felt252 {
             'Golden Token'
         }
@@ -116,7 +124,7 @@ pub mod golden_token {
             ref self: ERC721Component::ComponentState<ContractState>,
             to: ContractAddress,
             token_id: u256,
-            auth: ContractAddress
+            auth: ContractAddress,
         ) {
             let mut contract_state = self.get_contract_mut();
 
@@ -146,26 +154,40 @@ pub mod golden_token {
         self.erc721.initializer(name, symbol, base_uri);
         self.erc2981.initializer(royalty_receiver, royalty_fraction);
 
-        InternalTrait::airdrop_tokens(ref self, golden_token_address);
+        self.golden_token_address.write(golden_token_address);
     }
 
+    #[external(v0)]
+    fn airdrop_tokens(ref self: ContractState, limit: u8) {
+        self.ownable.assert_only_owner();
 
-    // Internal implementations
-    #[generate_trait]
-    impl InternalImpl of InternalTrait {
-        /// Internal function to airdrop tokens during contract construction
-        fn airdrop_tokens(ref self: ContractState, golden_token_address: ContractAddress) {
-            let golden_token_dispatcher = IERC721Dispatcher {
-                contract_address: golden_token_address,
-            };
+        let mut airdrop_count = self.airdrop_count.read();
+        assert(airdrop_count < 160, 'Airdrop completed');
 
-            let mut token_id = 1;
-            while token_id <= 160 {
-                let to = golden_token_dispatcher.owner_of(token_id);
-                self.erc721.mint(to, token_id);
-                token_id += 1;
+        let golden_token_dispatcher = IERC721Dispatcher {
+            contract_address: self.golden_token_address.read(),
+        };
+
+        let mut new_token_id: u16 = airdrop_count.into() * 7;
+
+        let new_limit = airdrop_count + limit;
+        while airdrop_count <= new_limit {
+            airdrop_count += 1;
+            let to = golden_token_dispatcher.owner_of(airdrop_count.into());
+
+            let mut i: u8 = 0;
+            loop {
+                if i >= 7 {
+                    break;
+                }
+
+                new_token_id += 1;
+                self.erc721.mint(to, new_token_id.into());
+                i += 1;
             }
         }
+
+        self.airdrop_count.write(airdrop_count);
     }
 
     // Custom ERC721Metadata Implementation
@@ -192,7 +214,7 @@ pub mod golden_token {
 
             // Description
             json.append(@"\"description\":\"");
-            json.append(@"One free game, every day, forever");
+            json.append(@"One free game, every week, forever");
             json.append(@"\",");
 
             // Image
