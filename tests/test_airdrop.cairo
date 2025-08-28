@@ -4,9 +4,7 @@ use openzeppelin_token::erc721::interface::{
     IERC721Dispatcher, IERC721DispatcherTrait, IERC721MetadataDispatcher,
     IERC721MetadataDispatcherTrait,
 };
-use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address,
-};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address};
 use starknet::ContractAddress;
 
 // Test constants
@@ -47,7 +45,7 @@ fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher, IGold
 
 #[test]
 #[fork("mainnet")]
-fn test_airdrop_80_tokens() {
+fn test_airdrop_two_rounds() {
     // Deploy the new golden token contract
     let (new_golden_token, new_golden_token_metadata, golden_token_dispatcher) =
         deploy_golden_token();
@@ -56,44 +54,35 @@ fn test_airdrop_80_tokens() {
     // Start cheat caller address to act as owner
     start_cheat_caller_address(golden_token_dispatcher.contract_address, owner);
 
-    golden_token_dispatcher.airdrop_tokens(80);
+    golden_token_dispatcher.airdrop_tokens();
+    golden_token_dispatcher.airdrop_tokens();
 
     // Get the original golden token contract on mainnet
     let original_golden_token = IERC721Dispatcher {
         contract_address: GOLDEN_TOKEN_MAINNET_ADDRESS(),
     };
 
-    // Verify all 80 legacy holders get 7 tokens each (560 total tokens)
     let mut new_token_id: u256 = 1;
-    let mut legacy_token_id: u256 = 1;
+    let mut airdrop_rounds = 0;
 
     loop {
-        if legacy_token_id > 80 {
+        if airdrop_rounds == 2 {
             break;
         }
 
-        // Get owner of legacy token
-        let legacy_owner = original_golden_token.owner_of(legacy_token_id);
-
-        // Check that this owner got 7 consecutive tokens in the new contract
-        let mut i: u8 = 0;
+        let mut legacy_token_id = 1;
         loop {
-            if i > 6 {
+            if legacy_token_id > 160 {
                 break;
             }
-
+            let legacy_owner = original_golden_token.owner_of(legacy_token_id);
             let new_owner = new_golden_token.owner_of(new_token_id);
             assert(new_owner == legacy_owner, 'Token ownership mismatch');
-
             new_token_id += 1;
-            i += 1;
+            legacy_token_id += 1;
         }
-
-        legacy_token_id += 1;
+        airdrop_rounds += 1;
     }
-
-    // Verify total supply is 560 (80 legacy holders * 7 tokens each)
-    assert(new_token_id == 80 * 7 + 1, 'Wrong total token count');
 
     // Verify metadata is set correctly
     let name = new_golden_token_metadata.name();
@@ -111,7 +100,7 @@ fn test_token_uri_generation() {
 
     // Start cheat caller address to act as owner and airdrop some tokens
     start_cheat_caller_address(golden_token_dispatcher.contract_address, owner);
-    golden_token_dispatcher.airdrop_tokens(1);
+    golden_token_dispatcher.airdrop_tokens();
 
     // Test token URI for just one token to avoid resource exhaustion
     let token_uri = new_golden_token_metadata.token_uri(1);

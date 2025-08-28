@@ -3,7 +3,7 @@ pub mod svg;
 
 #[starknet::interface]
 pub trait IGoldenToken<T> {
-    fn airdrop_tokens(ref self: T, limit: u8);
+    fn airdrop_tokens(ref self: T);
 }
 
 #[starknet::contract]
@@ -158,35 +158,29 @@ pub mod golden_token {
     }
 
     #[external(v0)]
-    fn airdrop_tokens(ref self: ContractState, limit: u8) {
+    fn airdrop_tokens(ref self: ContractState) {
         self.ownable.assert_only_owner();
 
         let mut airdrop_count = self.airdrop_count.read();
-        assert(airdrop_count < 160, 'Airdrop completed');
+        assert(airdrop_count < 7, 'Airdrop completed');
 
         let golden_token_dispatcher = IERC721Dispatcher {
             contract_address: self.golden_token_address.read(),
         };
 
-        let mut new_token_id: u16 = airdrop_count.into() * 7;
+        let golden_token_total: u16 = 160;
+        let mut new_token_id: u16 = airdrop_count.into() * golden_token_total;
 
-        let new_limit = airdrop_count + limit;
-        while airdrop_count <= new_limit {
-            airdrop_count += 1;
-            let to = golden_token_dispatcher.owner_of(airdrop_count.into());
-
-            let mut i: u8 = 0;
-            loop {
-                if i >= 7 {
-                    break;
-                }
-
-                new_token_id += 1;
-                self.erc721.mint(to, new_token_id.into());
-                i += 1;
-            }
+        let mut index = 0;
+        while index < golden_token_total {
+            index += 1;
+            new_token_id += 1;
+            
+            let to = golden_token_dispatcher.owner_of(index.into());
+            self.erc721.mint(to, new_token_id.into());
         }
 
+        airdrop_count += 1;
         self.airdrop_count.write(airdrop_count);
     }
 
