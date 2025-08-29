@@ -24,7 +24,7 @@ echo "Contract file found: $CONTRACT_FILE"
 # Constructor parameters for golden_token contract
 NAME="Golden Token"
 SYMBOL="GOLDEN"
-BASE_URI="https://golden-token.provable.games/"
+BASE_URI=""
 OWNER="0x0689701974d95364aAd9C2306Bc322A40a27fb775b0C97733FD0e36E900b1878"  # Contract owner address
 GOLDEN_TOKEN_ADDRESS="0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"  # Original golden token address to airdrop from
 ROYALTY_RECEIVER="0x0689701974d95364aAd9C2306Bc322A40a27fb775b0C97733FD0e36E900b1878"  # Royalty receiver address

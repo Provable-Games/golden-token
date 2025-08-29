@@ -208,7 +208,7 @@ pub mod golden_token {
 
             // Description
             json.append(@"\"description\":\"");
-            json.append(@"One free game, every week, forever");
+            json.append(@"A Golden Token provides one free game of Loot Survivor, every week, forever. Created together with the launch of the original Loot Survivor. Artwork by the 1337skulls team.");
             json.append(@"\",");
 
             // Image
