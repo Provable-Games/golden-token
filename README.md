@@ -29,7 +29,7 @@ Gen2 addresses early Gen1 limitations (pre-standard ERC721) by adopting modern s
 
 ## The Origin Story
 
-The original Golden Tokens were launched on **October 31st, 2023**, alongside the inaugural release of Loot Survivor. In a true fair-launch fashion, these 160 tokens were made available through a two week open edition mint with:
+The original Golden Tokens were launched on **October 31st, 2023**, alongside the inaugural release of Loot Survivor. In a true fair-launch fashion, these 160 tokens were made available through a three-week open edition mint with:
 
 - ✅ No allowlist
 - ✅ No mint limits
