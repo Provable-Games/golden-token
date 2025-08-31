@@ -36,7 +36,7 @@ The original Golden Tokens were launched on **October 31st, 2023**, alongside th
 - ✅ No team allocation
 - 💰 Cost: 75 games of Loot Survivor
 
-Golden Tokens provide a simple utility: One free game of Loot Survivor per day.
+Generation 1 Golden Tokens provided a simple utility: one free game of Loot Survivor per day. Generation 2 Golden Tokens now provide one free game of Loot Survivor per week.
 
 ## Generation 2: Technical Evolution & Enhanced Ecosystem
 
