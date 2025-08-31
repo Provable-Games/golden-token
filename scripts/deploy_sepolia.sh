@@ -14,7 +14,7 @@ echo "Building project..."
 scarb build
 
 # Check if contract file exists
-CONTRACT_FILE="target/dev/golden_token_nft_golden_token.contract_class.json"
+CONTRACT_FILE="target/dev/golden_token_golden_token.contract_class.json"
 if [ ! -f "$CONTRACT_FILE" ]; then
     echo "Error: Contract file not found at $CONTRACT_FILE"
     exit 1
@@ -24,9 +24,8 @@ echo "Contract file found: $CONTRACT_FILE"
 # Constructor parameters for golden_token contract
 NAME="Golden Token"
 SYMBOL="GOLDEN"
-BASE_URI=""
 OWNER="0x0689701974d95364aAd9C2306Bc322A40a27fb775b0C97733FD0e36E900b1878"  # Contract owner address
-GOLDEN_TOKEN_ADDRESS="0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"  # Original golden token address to airdrop from
+GOLDEN_TOKEN_ADDRESS="0x04f5e296c805126637552cf3930e857f380e7c078e8f00696de4fc8545356b1d"  # Original golden token address to airdrop from
 ROYALTY_RECEIVER="0x0689701974d95364aAd9C2306Bc322A40a27fb775b0C97733FD0e36E900b1878"  # Royalty receiver address
 ROYALTY_FRACTION="500"  # 5% royalty (500/10000)
 
@@ -50,7 +49,6 @@ echo "Deploying with parameters:"
 echo "  CLASS_HASH: $CLASS_HASH"
 echo "  NAME: $NAME"
 echo "  SYMBOL: $SYMBOL"
-echo "  BASE_URI: $BASE_URI"
 echo "  OWNER: $OWNER"
 echo "  GOLDEN_TOKEN_ADDRESS: $GOLDEN_TOKEN_ADDRESS"
 echo "  ROYALTY_RECEIVER: $ROYALTY_RECEIVER"
@@ -80,7 +78,6 @@ starkli deploy \
     $CLASS_HASH \
     bytearray:str:"$NAME" \
     bytearray:str:"$SYMBOL" \
-    bytearray:str:"$BASE_URI" \
     $OWNER \
     $GOLDEN_TOKEN_ADDRESS \
     $ROYALTY_RECEIVER \

@@ -1,5 +1,5 @@
 [package]
-name = "golden_token_nft"
+name = "golden_token"
 version = "0.1.0"
 edition = "2024_07"
 
@@ -29,5 +29,5 @@ inlining-strategy = "avoid"
 
 [tool.snforge]
 fork = [
-    { name = "mainnet", url = "https://api.cartridge.gg/x/starknet/mainnet", block_id = { tag = "latest" } }
+    { name = "mainnet", url = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_8", block_id = { tag = "latest" } }
 ]

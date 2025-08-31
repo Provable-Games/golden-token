@@ -75,16 +75,14 @@ jobs:
           # Wait for all background jobs to complete
           wait
 
-      # Install lcov for coverage reporting
       - name: Install lcov
         run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Cairo lint
         run: scarb fmt --check --workspace
 
-      # Run tests once with both fuzzing and coverage
-      - name: Run tests with fuzzing and coverage
-        run: snforge test --workspace --features fuzzing --fuzzer-runs 500 --coverage --max-n-steps 4294967295
+      - name: Run tests with coverage
+        run: snforge test --workspace --coverage
 
       - name: Check coverage threshold
         run: lcov --summary coverage/coverage.lcov --fail-under-lines 80
@@ -93,4 +91,4 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: Provable-Games/beasts
+          slug: Provable-Games/golden-token

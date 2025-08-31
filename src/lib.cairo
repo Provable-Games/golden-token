@@ -137,26 +137,28 @@ pub mod golden_token {
 
     /// Assigns `owner` as the contract owner.
     /// Sets the token `name` and `symbol`.
-    /// Sets the base URI.
+    /// Uses an empty base URI (fully onchain renderer).
     /// Sets default royalty info.
     #[constructor]
     fn constructor(
         ref self: ContractState,
         name: ByteArray,
         symbol: ByteArray,
-        base_uri: ByteArray,
         owner: ContractAddress,
         golden_token_address: ContractAddress,
         royalty_receiver: ContractAddress,
         royalty_fraction: u128,
     ) {
         self.ownable.initializer(owner);
-        self.erc721.initializer(name, symbol, base_uri);
+        self.erc721.initializer(name, symbol, ""); // no BASE URI needed
         self.erc2981.initializer(royalty_receiver, royalty_fraction);
 
         self.golden_token_address.write(golden_token_address);
     }
 
+    /// Airdrops 7 new tokens to each of the 160 Gen1 holders.
+    /// This is done in 7 rounds, each round airdropping 160 tokens.
+    /// This preserves the original token IDs.
     #[external(v0)]
     fn airdrop_tokens(ref self: ContractState) {
         self.ownable.assert_only_owner();
@@ -175,7 +177,7 @@ pub mod golden_token {
         while index < golden_token_total {
             index += 1;
             new_token_id += 1;
-            
+
             let to = golden_token_dispatcher.owner_of(index.into());
             self.erc721.mint(to, new_token_id.into());
         }
@@ -184,7 +186,6 @@ pub mod golden_token {
         self.airdrop_count.write(airdrop_count);
     }
 
-    // Custom ERC721Metadata Implementation
     #[abi(embed_v0)]
     impl ERC721Metadata of IERC721Metadata<ContractState> {
         fn name(self: @ContractState) -> ByteArray {
@@ -208,7 +209,7 @@ pub mod golden_token {
 
             // Description
             json.append(@"\"description\":\"");
-            json.append(@"A Golden Token provides one free game of Loot Survivor, every week, forever. Created together with the launch of the original Loot Survivor. Artwork by the 1337skulls team.");
+            json.append(SvgTrait::get_description());
             json.append(@"\",");
 
             // Image
@@ -216,8 +217,7 @@ pub mod golden_token {
             json
                 .append(
                     @format!(
-                        "data:image/svg+xml;base64,{}",
-                        bytes_base64_encode(SvgTrait::generate_svg()),
+                        "data:image/svg+xml;base64,{}", bytes_base64_encode(SvgTrait::get_svg()),
                     ),
                 );
 
