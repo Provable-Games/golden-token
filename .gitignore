@@ -9,3 +9,5 @@ Scarb.lock
 snfoundry_trace/
 .env
 accounts/
+oz_account.json
+sepolia_account.json

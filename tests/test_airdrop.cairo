@@ -1,5 +1,5 @@
 use core::serde::Serde;
-use golden_token_nft::{IGoldenTokenDispatcher, IGoldenTokenDispatcherTrait};
+use golden_token::{IGoldenTokenDispatcher, IGoldenTokenDispatcherTrait};
 use openzeppelin_token::erc721::interface::{
     IERC721Dispatcher, IERC721DispatcherTrait, IERC721MetadataDispatcher,
     IERC721MetadataDispatcherTrait,
@@ -21,7 +21,6 @@ fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher, IGold
     let owner: ContractAddress = OWNER.try_into().unwrap();
     let name: ByteArray = "Golden Token V2";
     let symbol: ByteArray = "GOLDENV2";
-    let base_uri: ByteArray = "https://api.provablegames.com/golden_token/";
     let golden_token_address = GOLDEN_TOKEN_MAINNET_ADDRESS();
     let royalty_receiver = owner;
     let royalty_fraction: u128 = 500; // 5%
@@ -29,7 +28,6 @@ fn deploy_golden_token() -> (IERC721Dispatcher, IERC721MetadataDispatcher, IGold
     let mut calldata = array![];
     name.serialize(ref calldata);
     symbol.serialize(ref calldata);
-    base_uri.serialize(ref calldata);
     calldata.append(owner.into());
     calldata.append(golden_token_address.into());
     calldata.append(royalty_receiver.into());
