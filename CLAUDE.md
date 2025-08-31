@@ -17,7 +17,7 @@ scarb build
 snforge test
 
 # Run tests with specific features
-snforge test --workspace --features fuzzing --fuzzer-runs 500 --coverage --max-n-steps 4294967295
+snforge test --workspace --coverage
 
 # Format code
 scarb fmt
@@ -56,7 +56,7 @@ Tests use `snforge` with mainnet forking to test against real Golden Token contr
 - Token IDs are calculated as: `airdrop_round * 160 + token_index`
 - Voting power transfers are handled automatically via `ERC721VotesHooksImpl`
 - Royalty fraction is immutable at 10,000 denominator (500 = 5%)
-- Constructor requires: name, symbol, base_uri, owner, golden_token_address, royalty_receiver, royalty_fraction
+- Constructor requires: name, symbol, owner, golden_token_address, royalty_receiver, royalty_fraction
 
 ## Dependencies
 - Cairo 2.11.4 
