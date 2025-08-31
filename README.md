@@ -47,7 +47,7 @@ Golden Token Generation 2 addresses these limitations while expanding the ecosys
 ### Technical Improvements
 
 - **Full ERC721 Compliance**: Built with OpenZeppelin 2.0.0 specifications for universal compatibility
-- **Modern Cairo**: Upgraded to Cairo 2.11.4 from 2.1.1 Cairo contracts
+- **Modern Cairo**: Upgraded to Cairo 2.11.4 from 2.1.0 Cairo contracts
 - **Ecosystem Compatibility**: Full support across all Starknet wallets, explorers, and marketplaces
 - **Onchain Governance**: Integrated ERC721Votes enables holders to formally express views through onchain voting
 - **Enhanced Security**: Latest audited OpenZeppelin components with comprehensive security patterns
