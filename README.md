@@ -176,7 +176,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Links
 
-- [V1 Golden Token Contract (Mainnet)](https://voyager.online/contract/0x04f5e296c805126637552cf3930e857f380e7c078e8f00696de4fc8545356b1d)
+- [V1 Golden Token Contract](https://voyager.online/contract/0x04f5e296c805126637552cf3930e857f380e7c078e8f00696de4fc8545356b1d)
 - [V1 Golden Token Source](https://github.com/BibliothecaDAO/golden-token)
+- [V2 Golden Token Contract](https://voyager.online/nft-contract/0x027838dea749f41c6f8a44fcfa791788e6101080c1b3cd646a361f653ad10e2d)
 - [Golden Token Ordinal Inscription](https://ordinals.com/inscription/372174547f83a8f288a8bac916841829de05e8817f102eed3f9b854aa2926398i0)
 - [Loot Survivor Game](https://lootsurvivor.io)

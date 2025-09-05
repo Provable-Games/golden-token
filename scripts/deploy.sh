@@ -10,20 +10,47 @@ fi
 # Source environment variables
 source .env
 
+# Validate authentication method - must have either keystore or private key
+if [ -z "$STARKNET_KEYSTORE" ] && [ -z "$STARKNET_PRIVATE_KEY" ]; then
+    echo "Error: Authentication method not configured."
+    echo "You must provide either:"
+    echo "  - STARKNET_KEYSTORE: Path to your keystore JSON file"
+    echo "  - STARKNET_PRIVATE_KEY: Your raw private key"
+    echo ""
+    echo "For better security, use a keystore instead of a raw private key."
+    exit 1
+fi
+
 # Validate required environment variables based on network
-if [ -z "$STARKNET_ACCOUNT" ] || [ -z "$STARKNET_PRIVATE_KEY" ] || [ -z "$NETWORK" ] || [ -z "$STARKNET_RPC" ] || [ -z "$OWNER" ] || [ -z "$ROYALTY_RECEIVER" ] || [ -z "$ROYALTY_FRACTION" ]; then
+if [ -z "$STARKNET_ACCOUNT" ] || [ -z "$NETWORK" ] || [ -z "$STARKNET_RPC" ] || [ -z "$OWNER" ] || [ -z "$ROYALTY_RECEIVER" ] || [ -z "$ROYALTY_FRACTION" ]; then
     echo "Error: Required environment variables are missing."
     echo "The following must be set in .env:"
     echo "  - STARKNET_ACCOUNT: Your Starknet account address or path to account JSON file"
-    echo "  - STARKNET_PRIVATE_KEY: Your account's private key"
     echo "  - NETWORK: Either 'sepolia' or 'mainnet'"
     echo "  - STARKNET_RPC: RPC endpoint URL for the network"
     echo "  - OWNER: Contract owner address"
     echo "  - ROYALTY_RECEIVER: Royalty receiver address"
     echo "  - ROYALTY_FRACTION: Royalty percentage as basis points (e.g., 500 for 5%)"
     echo ""
+    echo "Plus one of these authentication methods:"
+    echo "  - STARKNET_KEYSTORE: Path to keystore file (recommended)"
+    echo "  - STARKNET_PRIVATE_KEY: Raw private key"
+    echo ""
     echo "Please copy .env.example to .env and fill in all required values."
     exit 1
+fi
+
+# Set up authentication parameters
+if [ -n "$STARKNET_KEYSTORE" ]; then
+    echo "Using keystore authentication: $STARKNET_KEYSTORE"
+    AUTH_PARAM="--keystore $STARKNET_KEYSTORE"
+    # Check if keystore password is provided via environment
+    if [ -n "$STARKNET_KEYSTORE_PASSWORD" ]; then
+        export STARKNET_KEYSTORE_PASSWORD
+    fi
+else
+    echo "Using private key authentication"
+    AUTH_PARAM="--private-key $STARKNET_PRIVATE_KEY"
 fi
 
 # Validate NETWORK value
@@ -104,7 +131,7 @@ if [ "$NETWORK" = "sepolia" ]; then
     echo "Declaring mock contract..."
     echo "Using account: $ACCOUNT_FILE"
     export STARKLI_NO_PLAIN_KEY_WARNING=true
-    MOCK_DECLARE_OUTPUT=$(starkli declare --account "$ACCOUNT_FILE" --private-key "$STARKNET_PRIVATE_KEY" --rpc "$STARKNET_RPC" "$MOCK_CONTRACT_FILE" 2>&1)
+    MOCK_DECLARE_OUTPUT=$(starkli declare --account "$ACCOUNT_FILE" $AUTH_PARAM --rpc "$STARKNET_RPC" "$MOCK_CONTRACT_FILE" 2>&1)
     echo "Mock declare output: $MOCK_DECLARE_OUTPUT"
     
     MOCK_CLASS_HASH=$(echo "$MOCK_DECLARE_OUTPUT" | grep -oE "0x[0-9a-fA-F]+" | tail -1)
@@ -122,7 +149,7 @@ if [ "$NETWORK" = "sepolia" ]; then
     MOCK_OWNER=$(starkli account address --account "$ACCOUNT_FILE" 2>/dev/null || echo "$STARKNET_ACCOUNT")
     MOCK_DEPLOY_OUTPUT=$(starkli deploy \
         --account "$ACCOUNT_FILE" \
-        --private-key "$STARKNET_PRIVATE_KEY" \
+        $AUTH_PARAM \
         --rpc "$STARKNET_RPC" \
         $MOCK_CLASS_HASH \
         bytearray:str:"Golden Token V1" \
@@ -150,7 +177,7 @@ if [ "$NETWORK" = "sepolia" ]; then
     echo "Minting 160 test tokens..."
     MINT_OUTPUT=$(starkli invoke --watch \
         --account "$ACCOUNT_FILE" \
-        --private-key "$STARKNET_PRIVATE_KEY" \
+        $AUTH_PARAM \
         --rpc "$STARKNET_RPC" \
         $GOLDEN_TOKEN_ADDRESS \
         mint_batch \
@@ -177,10 +204,10 @@ echo "Starting main contract declaration..."
 # Set account parameter based on network
 if [ "$NETWORK" = "mainnet" ]; then
     ACCOUNT_PARAM="--account $STARKNET_ACCOUNT"
-    DECLARE_CMD="starkli declare $ACCOUNT_PARAM --private-key \"$STARKNET_PRIVATE_KEY\" --rpc \"$STARKNET_RPC\" \"$MAIN_CONTRACT_FILE\""
+    DECLARE_CMD="starkli declare $ACCOUNT_PARAM $AUTH_PARAM --rpc \"$STARKNET_RPC\" \"$MAIN_CONTRACT_FILE\""
 else
     ACCOUNT_PARAM="--account $ACCOUNT_FILE"
-    DECLARE_CMD="starkli declare --watch $ACCOUNT_PARAM --private-key \"$STARKNET_PRIVATE_KEY\" --rpc \"$STARKNET_RPC\" \"$MAIN_CONTRACT_FILE\""
+    DECLARE_CMD="starkli declare --watch $ACCOUNT_PARAM $AUTH_PARAM --rpc \"$STARKNET_RPC\" \"$MAIN_CONTRACT_FILE\""
 fi
 
 DECLARE_OUTPUT=$(eval $DECLARE_CMD 2>&1)
@@ -217,7 +244,7 @@ echo "Note: This may take a few minutes..."
 if [ "$NETWORK" = "mainnet" ]; then
     starkli deploy \
         $ACCOUNT_PARAM \
-        --private-key "$STARKNET_PRIVATE_KEY" \
+        $AUTH_PARAM \
         --rpc "$STARKNET_RPC" \
         $CLASS_HASH \
         bytearray:str:"$NAME" \
@@ -229,7 +256,7 @@ if [ "$NETWORK" = "mainnet" ]; then
 else
     DEPLOY_OUTPUT=$(starkli deploy \
         $ACCOUNT_PARAM \
-        --private-key "$STARKNET_PRIVATE_KEY" \
+        $AUTH_PARAM \
         --rpc "$STARKNET_RPC" \
         $CLASS_HASH \
         bytearray:str:"$NAME" \
